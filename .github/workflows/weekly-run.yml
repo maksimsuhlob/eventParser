@@ -27,6 +27,25 @@ jobs:
     - name: Build project
       run: dotnet build --no-restore --configuration Release
       
+    - name: Debug environment variables
+      run: |
+        echo "Checking environment variables..."
+        echo "Telegram__BotToken length: ${#Telegram__BotToken}"
+        echo "Telegram__ChatId length: ${#Telegram__ChatId}"
+        if [ -z "$Telegram__BotToken" ]; then
+          echo "❌ Telegram__BotToken is empty or not set"
+        else
+          echo "✅ Telegram__BotToken is set (${#Telegram__BotToken} characters)"
+        fi
+        if [ -z "$Telegram__ChatId" ]; then
+          echo "❌ Telegram__ChatId is empty or not set"
+        else
+          echo "✅ Telegram__ChatId is set (${#Telegram__ChatId} characters)"
+        fi
+      env:
+        Telegram__BotToken: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+        Telegram__ChatId: ${{ secrets.TELEGRAM_CHAT_ID }}
+      
     - name: Run project
       run: dotnet run --configuration Release --no-build
       env:
