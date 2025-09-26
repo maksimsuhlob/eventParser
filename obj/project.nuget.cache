@@ -1,0 +1,35 @@
+{
+  "version": 2,
+  "dgSpecHash": "Dpml7/S+RMI=",
+  "success": true,
+  "projectFilePath": "/Users/maxim.suglob/projects/eventParser/eventParser.csproj",
+  "expectedPackageFiles": [
+    "/Users/maxim.suglob/.nuget/packages/htmlagilitypack/1.12.2/htmlagilitypack.1.12.2.nupkg.sha512",
+    "/Users/maxim.suglob/.nuget/packages/microsoft.extensions.configuration/9.0.8/microsoft.extensions.configuration.9.0.8.nupkg.sha512",
+    "/Users/maxim.suglob/.nuget/packages/microsoft.extensions.configuration.abstractions/9.0.8/microsoft.extensions.configuration.abstractions.9.0.8.nupkg.sha512",
+    "/Users/maxim.suglob/.nuget/packages/microsoft.extensions.configuration.binder/8.0.0/microsoft.extensions.configuration.binder.8.0.0.nupkg.sha512",
+    "/Users/maxim.suglob/.nuget/packages/microsoft.extensions.configuration.environmentvariables/9.0.8/microsoft.extensions.configuration.environmentvariables.9.0.8.nupkg.sha512",
+    "/Users/maxim.suglob/.nuget/packages/microsoft.extensions.configuration.fileextensions/9.0.8/microsoft.extensions.configuration.fileextensions.9.0.8.nupkg.sha512",
+    "/Users/maxim.suglob/.nuget/packages/microsoft.extensions.configuration.json/9.0.8/microsoft.extensions.configuration.json.9.0.8.nupkg.sha512",
+    "/Users/maxim.suglob/.nuget/packages/microsoft.extensions.dependencyinjection.abstractions/8.0.0/microsoft.extensions.dependencyinjection.abstractions.8.0.0.nupkg.sha512",
+    "/Users/maxim.suglob/.nuget/packages/microsoft.extensions.fileproviders.abstractions/9.0.8/microsoft.extensions.fileproviders.abstractions.9.0.8.nupkg.sha512",
+    "/Users/maxim.suglob/.nuget/packages/microsoft.extensions.fileproviders.physical/9.0.8/microsoft.extensions.fileproviders.physical.9.0.8.nupkg.sha512",
+    "/Users/maxim.suglob/.nuget/packages/microsoft.extensions.filesystemglobbing/9.0.8/microsoft.extensions.filesystemglobbing.9.0.8.nupkg.sha512",
+    "/Users/maxim.suglob/.nuget/packages/microsoft.extensions.options/8.0.0/microsoft.extensions.options.8.0.0.nupkg.sha512",
+    "/Users/maxim.suglob/.nuget/packages/microsoft.extensions.options.configurationextensions/8.0.0/microsoft.extensions.options.configurationextensions.8.0.0.nupkg.sha512",
+    "/Users/maxim.suglob/.nuget/packages/microsoft.extensions.primitives/9.0.8/microsoft.extensions.primitives.9.0.8.nupkg.sha512",
+    "/Users/maxim.suglob/.nuget/packages/system.text.json/8.0.5/system.text.json.8.0.5.nupkg.sha512",
+    "/Users/maxim.suglob/.nuget/packages/telegram.bot/22.6.2/telegram.bot.22.6.2.nupkg.sha512"
+  ],
+  "logs": [
+    {
+      "code": "Undefined",
+      "level": "Warning",
+      "message": "Problem reading the cache file /Users/maxim.suglob/projects/eventParser/obj/project.nuget.cache : The input does not contain any JSON tokens. Expected the input to start with a valid JSON token, when isFinalBlock is true. Path: $ | LineNumber: 0 | BytePositionInLine: 0.",
+      "projectPath": "/Users/maxim.suglob/projects/eventParser/eventParser.csproj",
+      "warningLevel": 1,
+      "filePath": "/Users/maxim.suglob/projects/eventParser/eventParser.csproj",
+      "targetGraphs": []
+    }
+  ]
+}

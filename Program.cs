@@ -1,4 +1,5 @@
 ﻿using eventParser.bialystok_pl;
+using eventParser.bialystokonline_pl;
 using Microsoft.Extensions.Configuration;
 
 namespace eventParser;
@@ -19,11 +20,10 @@ class Program
                         ?? throw new InvalidOperationException("Telegram:ChatId не найден в конфигурации");
 
 
-        BialystokPl bialystokPl = new();
-        var events = await bialystokPl.GetBialystokPlEvents();
-
+        BialystokOnlinePl bialystokonlinePl = new();
+        var events = await bialystokonlinePl.GetBialystokOnlinePlEvents();
 
         var telegramBot = new TelegramBot(botToken, chatId);
-        await telegramBot.SendEventsMessage(events);
+        await telegramBot.SendEventsMessageFromBialystokOnline(events);
     }
 }
