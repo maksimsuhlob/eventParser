@@ -96,7 +96,7 @@ public class BialystokOnlinePl
                     string.Join("",
                             eventRight.SelectSingleNode(HtmlSelectors.EventDate).ChildNodes
                                 .Select(node => node.InnerText))
-                        .Replace("\n", "").Trim(), @"\s+", " ");
+                        .Replace("\n", "/").Trim(), @"\s+", " ");
                 description = string.Join(", ",
                     eventRight.SelectSingleNode(HtmlSelectors.EventDesc).ChildNodes.Select(node => node.InnerText));
 
@@ -118,11 +118,22 @@ public class BialystokOnlinePl
                 if (( endDate.Value-startDate.Value ).Days > 7)
                     if (DateTime.Now.DayOfWeek != DayOfWeek.Monday)
                         continue;
-
+            
+            // Console.WriteLine(date);
+            // Console.WriteLine(new BOEvent
+            // {
+            //     Date = date,
+            //     Title = title,
+            //     Url = UrlConstants.HostUrl + eventUrl,
+            //     Place = description,
+            //     ImageUrl = imgUrl ?? "",
+            //     Group = groupTitle,
+            //     GroupUrl = UrlConstants.HostUrl + "/" + groupUrl,
+            // }.ToString());
 
             events.Add(new BOEvent
             {
-                Date = date,
+                Date = date.Replace("/", ""),
                 Title = title,
                 Url = UrlConstants.HostUrl + eventUrl,
                 Place = description,
@@ -155,158 +166,237 @@ public static class DateParserPl
         ["gru"] = 12, ["grudnia"] = 12,
     };
 
-    // Удаляем шум: день недели, "godz.", лишние пробелы, множественные пробелы
-    private static string Normalize(string s)
+    private static readonly HashSet<string> WeekDays = new(StringComparer.OrdinalIgnoreCase)
     {
+        "poniedziałek","wtorek","środa","czwartek","piątek","sobota","niedziela",
+        "pon","wt","śr","czw","pt","sob","ndz"
+    };
+
+    // Нормализуем, но сохраняем разделение "/" как требование задачи
+    private static string[] TokenizeBySlashes(string s)
+    {
+        if (string.IsNullOrWhiteSpace(s)) return Array.Empty<string>();
         s = s.Replace("\u00A0", " "); // NBSP
-        s = Regex.Replace(s, @"\s+", " ").Trim();
-
-        // убрать "Piątek", "Sobota", и пр. (дни недели на польском)
-        s = Regex.Replace(s,
-            @"\b(poniedziałek|wtorek|środa|czwartek|piątek|sobota|niedziela|pon|wt|śr|czw|pt|sob|ndz)\b\.?",
-            "", RegexOptions.IgnoreCase);
-
-        // убрать "godz." и возможное "g." перед временем
-        s = Regex.Replace(s, @"\b(godz\.?|g\.)\b", "", RegexOptions.IgnoreCase);
-
-        // снова нормализуем пробелы
-        s = Regex.Replace(s, @"\s+", " ").Trim();
-        return s;
+        // Удаляем лишние пробелы вокруг слэшей и схлопываем повторяющиеся слэши
+        s = Regex.Replace(s, @"\s*/\s*", "/");
+        s = Regex.Replace(s, @"/{2,}", "/");
+        // Удаляем ведущие/замыкающие слэши
+        s = s.Trim('/');
+        // Разбиваем
+        var raw = s.Split('/', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        // Удаляем пустые и схлопываем пробелы
+        return raw.Select(x => Regex.Replace(x, @"\s+", " ").Trim())
+                  .Where(x => !string.IsNullOrWhiteSpace(x))
+                  .ToArray();
     }
 
-    private static bool TryParseOneDate(string token, out DateTime date, out TimeSpan? time)
+    private static bool IsWeekDay(string s) => WeekDays.Contains(s.Trim().TrimEnd('.'));
+
+    private static bool TryParseTime(string s, out TimeSpan ts)
     {
-        date = default;
-        time = null;
+        ts = default;
+        s = s.Trim();
+        // убрать "godz." / "g."
+        s = Regex.Replace(s, @"\b(godz\.?|g\.)\b", "", RegexOptions.IgnoreCase).Trim();
+        return TimeSpan.TryParseExact(s, new[] { "H\\:mm", "HH\\:mm" }, CultureInfo.InvariantCulture, out ts);
+    }
 
-        // варианты:
-        //  - 26 wrz 2025
-        //  - 26 wrz
-        //  - 26 wrz 2025 17:00
-        //  - 26 wrz 17:00
-        //  - 17:00 (только время — применим к уже разобранной дате снаружи)
+    private static bool TryParseDayMonthYear(string text, out int day, out int month, out int? year)
+    {
+        day = 0; month = 0; year = null;
+        var parts = text.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
-        var parts = token.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        if (parts.Length == 0) return false;
-
-        int? day = null;
-        int? month = null;
-        int? year = null;
-        TimeSpan? parsedTime = null;
+        // Возможные формы: "27", "27 wrz", "27 wrz 2025", "wrz 2025", "2025"
+        int? d = null;
+        int? m = null;
+        int? y = null;
 
         foreach (var p in parts)
         {
-            var pp = p.Trim();
-
-            // время HH:mm
-            if (Regex.IsMatch(pp, @"^\d{1,2}:\d{2}$"))
+            var t = p.Trim();
+            if (int.TryParse(t, out var n))
             {
-                if (TimeSpan.TryParseExact(pp, "h\\:mm", CultureInfo.InvariantCulture, out var ts) ||
-                    TimeSpan.TryParseExact(pp, "hh\\:mm", CultureInfo.InvariantCulture, out ts))
+                if (t.Length == 4 && n is >= 1900 and <= 2100)
                 {
-                    parsedTime = ts;
-                    continue;
+                    y = n;
                 }
-            }
-
-            // год
-            if (int.TryParse(pp, out var n) && pp.Length == 4)
-            {
-                if (n is >= 1900 and <= 2100) year = n;
+                else if (n is >= 1 and <= 31 && d is null)
+                {
+                    d = n;
+                }
                 continue;
             }
 
-            // день
-            if (int.TryParse(pp, out n) && pp.Length <= 2)
+            var key = t.ToLowerInvariant();
+            if (MonthMap.TryGetValue(key, out var mm))
             {
-                if (n is >= 1 and <= 31)
-                {
-                    day = n;
-                    continue;
-                }
-            }
-
-            // месяц
-            var key = pp.ToLowerInvariant();
-            if (MonthMap.TryGetValue(key, out var m))
-            {
-                month = m;
-                continue;
+                m = mm;
             }
         }
 
-        if (day is null || month is null)
-            return false;
+        if (d.HasValue) day = d.Value;
+        if (m.HasValue) month = m.Value;
+        year = y;
+        return d.HasValue || m.HasValue || y.HasValue;
+    }
 
+    private static bool TryBuildDate(int? day, int? month, int? year, out DateTime date)
+    {
+        date = default;
+        if (day is null || month is null) return false;
         var y = year ?? DateTime.Now.Year;
-        // ТРЕБОВАНИЕ: если год не указан — использовать текущий год без переноса на следующий
-        // (ранее здесь происходил автосдвиг на следующий год для прошедших дат)
         var d = Math.Min(day.Value, DateTime.DaysInMonth(y, month.Value));
         date = new DateTime(y, month.Value, d, 0, 0, 0, DateTimeKind.Local);
-        time = parsedTime;
         return true;
     }
 
-    // Главная функция: возвращает (StartDate, EndDate) и отдельно строку времени (если есть) через out
+    private static bool TryParseSingleDateToken(string token, int? inheritedDay, int? inheritedMonth, int? inheritedYear, out DateTime date, out int? outDay, out int? outMonth, out int? outYear)
+    {
+        date = default;
+        outDay = inheritedDay;
+        outMonth = inheritedMonth;
+        outYear = inheritedYear;
+
+        // Удаляем дни недели
+        var cleaned = string.Join(' ', token.Split(' ').Where(p => !IsWeekDay(p)));
+
+        // Пробуем извлечь время, но дата составляется отдельно
+        if (TryParseDayMonthYear(cleaned, out var d, out var m, out var y))
+        {
+            if (d != 0) outDay = d;
+            if (m != 0) outMonth = m;
+            if (y.HasValue) outYear = y;
+
+            if (TryBuildDate(outDay, outMonth, outYear, out var built))
+            {
+                date = built;
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool TryParseRangeToken(string token, int? inheritedYear, out DateTime start, out DateTime end, out int? outYear)
+    {
+        start = default; end = default; outYear = inheritedYear;
+
+        // Формы диапазона внутри одного токена:
+        // "01 wrz - 31 paź", "09 - 30 wrz", "09 - 30"
+        var parts = Regex.Split(token, @"\s*-\s*");
+        if (parts.Length != 2) return false;
+
+        // Левая и правая части могут быть неполными, год можем взять из правой, месяца — из той части, где он указан
+        int? lDay = null, lMonth = null, lYear = inheritedYear;
+        int? rDay = null, rMonth = null, rYear = inheritedYear;
+
+        TryParseDayMonthYear(parts[0], out var ld, out var lm, out var ly);
+        TryParseDayMonthYear(parts[1], out var rd, out var rm, out var ry);
+
+        if (ld != 0) lDay = ld;
+        if (lm != 0) lMonth = lm;
+        if (ly.HasValue) lYear = ly;
+
+        if (rd != 0) rDay = rd;
+        if (rm != 0) rMonth = rm;
+        if (ry.HasValue) rYear = ry;
+
+        // Наследование месяца/года между частями
+        if (lMonth is null && rMonth is not null) lMonth = rMonth;
+        if (rMonth is null && lMonth is not null) rMonth = lMonth;
+
+        if (lYear is null && rYear is not null) lYear = rYear;
+        if (rYear is null && lYear is not null) rYear = lYear;
+
+        outYear = rYear ?? lYear ?? inheritedYear;
+
+        if (TryBuildDate(lDay, lMonth, lYear, out var s) && TryBuildDate(rDay, rMonth, rYear, out var e))
+        {
+            start = s; end = e; return true;
+        }
+
+        return false;
+    }
+
     public static (DateTime? StartDate, DateTime? EndDate) Parse(string input, out string timeText)
     {
         timeText = "";
-        if (string.IsNullOrWhiteSpace(input))
-            return (null, null);
+        if (string.IsNullOrWhiteSpace(input)) return (null, null);
 
-        var s = Normalize(input);
+        var tokens = TokenizeBySlashes(input);
+        if (tokens.Length == 0) return (null, null);
 
-        // Сначала пробуем распознать явные диапазоны:
-        // 1) "26 maj - 09 gru 2025"
-        var rangeDash = Regex.Split(s, @"\s-\s");
-        if (rangeDash.Length == 2)
+        DateTime? start = null;
+        DateTime? end = null;
+        TimeSpan? time = null;
+
+        int? curDay = null;
+        int? curMonth = null;
+        int? curYear = null;
+
+        foreach (var raw in tokens)
         {
-            if (TryParseOneDate(rangeDash[0], out var d1, out var t1) &&
-                TryParseOneDate(rangeDash[1], out var d2, out var t2))
+            var t = raw;
+
+            // 1) Если это чисто время или содержит "godz."
+            if (TryParseTime(t, out var ts))
             {
-                timeText = (t1 ?? t2)?.ToString() ?? "";
-                return (d1, d2);
+                time = ts;
+                continue;
+            }
+
+            // 2) Если это день недели — пропускаем
+            if (IsWeekDay(t)) continue;
+
+            // 3) Попытка распарсить диапазон внутри токена
+            if (TryParseRangeToken(t, curYear, out var s, out var e, out var newYear))
+            {
+                start ??= s;
+                end = e; // последний диапазон обновляет конец
+                curYear = newYear ?? curYear;
+                // Обновим текущие D/M для наследования после диапазона
+                curDay = e.Day;
+                curMonth = e.Month;
+                continue;
+            }
+
+            // 4) Одиночная дата/фрагмент даты
+            if (TryParseSingleDateToken(t, curDay, curMonth, curYear, out var d, out var nd, out var nm, out var ny))
+            {
+                if (start is null)
+                {
+                    start = d;
+                }
+                else
+                {
+                    // если start уже есть и нет end, а новая дата позже/другая — считаем это end
+                    if (end is null)
+                        end = d;
+                    else
+                        end = d; // при повторных датах берём последнюю как конец
+                }
+
+                curDay = nd;
+                curMonth = nm;
+                curYear = ny ?? curYear;
+                continue;
+            }
+
+            // 5) Если токен содержит год/месяц без дня — обновим контекст года/месяца
+            if (TryParseDayMonthYear(t, out var onlyD, out var onlyM, out var onlyY))
+            {
+                if (onlyY.HasValue) curYear = onlyY.Value;
+                if (onlyM != 0) curMonth = onlyM;
+                if (onlyD != 0) curDay = onlyD;
             }
         }
 
-        // 2) Две даты подряд с пробелом: "24 lip 2025 06 sie 2026"
-        // Разобьём строку на две логические даты, пытаясь найти позицию второго дня (числа 1..31)
-        var mDays = Regex.Matches(s, @"\b([12]?\d|3[01])\b");
-        if (mDays.Count >= 2)
-        {
-            // попытаемся разделить по позиции второго совпадения
-            var secondIndex = mDays[1].Index;
-            var left = s[..secondIndex].Trim();
-            var right = s[secondIndex..].Trim();
+        // Если времени нет, но внутри исходной строки было "godz. XX:YY" — уже обработано.
+        timeText = time?.ToString() ?? "";
 
-            if (TryParseOneDate(left, out var d1, out var t1) &&
-                TryParseOneDate(right, out var d2, out var t2))
-            {
-                timeText = (t1 ?? t2)?.ToString() ?? "";
-                return (d1, d2);
-            }
-        }
+        // Если есть только start без end — это одиночная дата
+        if (start.HasValue && !end.HasValue) end = start;
 
-        // 3) Обычная одиночная дата, возможно с временем: "26 wrz 2025 Piątek godz. 17:00"
-        if (TryParseOneDate(s, out var d, out var t))
-        {
-            timeText = t?.ToString() ?? "";
-            return (d, d);
-        }
-
-        // 4) Если осталось только время без даты — вернём текущую дату
-        var onlyTimeMatch = Regex.Match(s, @"^\d{1,2}:\d{2}$");
-        if (onlyTimeMatch.Success)
-        {
-            if (TimeSpan.TryParseExact(onlyTimeMatch.Value, "h\\:mm", CultureInfo.InvariantCulture, out var ts) ||
-                TimeSpan.TryParseExact(onlyTimeMatch.Value, "hh\\:mm", CultureInfo.InvariantCulture, out ts))
-            {
-                var baseDate = DateTime.Now.Date + ts;
-                timeText = ts.ToString();
-                return (baseDate, baseDate);
-            }
-        }
-
-        return (null, null);
+        return (start, end);
     }
 }

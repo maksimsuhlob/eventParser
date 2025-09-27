@@ -22,7 +22,7 @@ class Program
 
         BialystokOnlinePl bialystokonlinePl = new();
         var events = await bialystokonlinePl.GetBialystokOnlinePlEvents();
-
+// Console.WriteLine(events.Count);
         var telegramBot = new TelegramBot(botToken, chatId);
         await telegramBot.SendEventsMessageFromBialystokOnline(events);
     }
