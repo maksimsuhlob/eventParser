@@ -39,6 +39,10 @@ public class BialystokOnlinePl
     {
         List<IPage> pages = [];
         var pagination = doc.DocumentNode.SelectNodes(HtmlSelectors.Pagination);
+        if (pagination == null || pagination.Count == 0)
+        {
+            return pages; 
+        }
         if (pagination.Count > 0)
         {
             var links = doc.DocumentNode.SelectNodes(HtmlSelectors.PaginationLink);
