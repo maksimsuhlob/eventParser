@@ -1,3 +1,5 @@
+using System;
+
 namespace eventParser.bialystokonline_pl;
 
 static class HtmlSelectors

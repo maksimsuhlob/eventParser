@@ -1,3 +1,5 @@
+using System;
+
 namespace eventParser.bialystok_pl;
 
 public interface IEvent

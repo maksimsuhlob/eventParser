@@ -1,6 +1,11 @@
+using System;
+using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using HtmlAgilityPack;
 using System.Globalization;
+using System.Linq;
+using System.Net.Http;
+using System.Threading.Tasks;
 
 namespace eventParser.bialystokonline_pl;
 
@@ -19,7 +24,7 @@ public class BialystokOnlinePl
         {
             var eventsPage = await GetPageAsync(UrlConstants.HostUrl + page.Url);
             Console.WriteLine(UrlConstants.HostUrl + page.Url);
-            var eventsFromPage = await GetEvents(eventsPage);
+            var eventsFromPage = GetEvents(eventsPage);
             events.AddRange(eventsFromPage);
         }
 
@@ -68,7 +73,7 @@ public class BialystokOnlinePl
     }
 
 
-    static async Task<List<IBOEvent>> GetEvents(HtmlDocument doc)
+    static List<IBOEvent> GetEvents(HtmlDocument doc)
     {
         List<IBOEvent> events = [];
         var pageEventList = doc.DocumentNode.SelectNodes(HtmlSelectors.EventList);
@@ -105,8 +110,9 @@ public class BialystokOnlinePl
                     eventRight.SelectSingleNode(HtmlSelectors.EventDesc).ChildNodes.Select(node => node.InnerText));
 
                 (startDate, endDate) = DateParserPl.Parse(date, out var time);
-                // Console.WriteLine(start);
-                // Console.WriteLine(end);
+                // Console.WriteLine(date);
+                // Console.WriteLine(startDate);
+                // Console.WriteLine(endDate);
                 // Console.WriteLine(time);
             }
             catch (Exception e)
@@ -115,8 +121,8 @@ public class BialystokOnlinePl
                 throw;
             }
 
-            // Console.WriteLine(startDate.Value);
-            // Console.WriteLine(endDate.Value);
+            // Console.WriteLine(startDate);
+            // Console.WriteLine(endDate);
             // Console.WriteLine((endDate.Value - startDate.Value).Days);
             if (startDate.HasValue && endDate.HasValue)
                 if (( endDate.Value-startDate.Value ).Days > 7)
@@ -329,7 +335,7 @@ public static class DateParserPl
 
         var tokens = TokenizeBySlashes(input);
         if (tokens.Length == 0) return (null, null);
-
+        
         DateTime? start = null;
         DateTime? end = null;
         TimeSpan? time = null;
@@ -337,7 +343,7 @@ public static class DateParserPl
         int? curDay = null;
         int? curMonth = null;
         int? curYear = null;
-
+        
         foreach (var raw in tokens)
         {
             var t = raw;
@@ -401,6 +407,11 @@ public static class DateParserPl
         // Если есть только start без end — это одиночная дата
         if (start.HasValue && !end.HasValue) end = start;
 
+        if ((end.Value - start.Value).Days < 0)
+        {
+            start = start.Value.AddYears(start.Value.Year - 1);
+        }
+        
         return (start, end);
     }
 }

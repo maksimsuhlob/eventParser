@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+
 static class MonthDictiobary
 {
     private const string January = "styczeń";

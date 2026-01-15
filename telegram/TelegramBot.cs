@@ -1,5 +1,8 @@
+using System;
+using System.Collections.Generic;
 using Telegram.Bot;
 using System.Text;
+using System.Threading.Tasks;
 using eventParser.bialystokonline_pl;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.ReplyMarkups;

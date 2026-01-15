@@ -1,4 +1,6 @@
-﻿using eventParser.bialystok_pl;
+﻿using System;
+using System.Threading.Tasks;
+using eventParser.bialystok_pl;
 using eventParser.bialystokonline_pl;
 using Microsoft.Extensions.Configuration;
 
