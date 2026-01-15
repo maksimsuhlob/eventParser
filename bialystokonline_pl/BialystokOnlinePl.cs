@@ -409,7 +409,7 @@ public static class DateParserPl
 
         if ((end.Value - start.Value).Days < 0)
         {
-            start = start.Value.AddYears(start.Value.Year - 1);
+            start = start.Value.AddYears(- 1);
         }
         
         return (start, end);
