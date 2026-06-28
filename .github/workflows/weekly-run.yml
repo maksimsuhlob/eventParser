@@ -2,8 +2,8 @@ name: Weekly Project Run
 
 on:
   schedule:
-    # Запуск каждый понедельник в 6:00 UTC
-    - cron: '0 6 * * *'
+    # Запуск каждый понедельник в 2:00 UTC
+    - cron: '0 2 * * *'
   
   # Позволяет запускать workflow вручную
   workflow_dispatch:
